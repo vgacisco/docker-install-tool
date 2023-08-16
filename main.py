@@ -47,7 +47,7 @@ class DockerTool:
         self.host = server['host'] if 'host' in server else None
         self.port = server['port'] if 'port' in server else 22
         self.username = server['username'] if 'username' in server else os.getlogin()
-        self.password = server['password'] if 'password' in server else None
+        self.password = server['password'] if 'password' in server else ""
         self.key_filename = server['key_filename'] if 'key_filename' in server else "~/.ssh/id_rsa"
         self.key_filename = self.key_filename.replace("~", os.path.expanduser("~"))
         self.re_info = ReInfo()
@@ -133,18 +133,18 @@ def servers_install_docker(server_list: list) -> int:
     # 主机对象列表
     for server in server_list:
         docker_host = DockerTool(server)
-        if 1 != docker_host.connect_server():
+        if docker_host.connect_server() != 0:
             docker_host.re_info.print_msg()
             return 1
 
-        if docker_host.install_docker() != 0:
+        if docker_host.ubuntu_install_docker() != 0:
             docker_host.re_info.print_msg()
             return 2
     return 0
 
 
 def print_config():
-    config_file = """global_pass: None
+    config_file = """
 global_key_file: "~/.ssh/id_rsa"
 servers:
   - host: "192.168.1.31"
@@ -172,11 +172,11 @@ if __name__ == '__main__':
     # 读取配置文件
     with open("docker.yaml", "rb") as f:
         charset = chardet.detect(f.read(4))['encoding']
-    with open("docker.io", "r") as f:
+    with open("docker.yaml", "r") as f:
         config = yaml.safe_load(f)
 
     # 安装docker
-    new_server_list = []
+    new_server_list: list = []
     global_pass = config['global_pass'] if 'global_pass' in config else None
     global_key_file = config['global_key_file'] if 'global_key_file' in config else "~/.ssh/id_rsa"
 
@@ -187,5 +187,4 @@ if __name__ == '__main__':
         new_server_list.append(server)
 
     # 安装 dockers
-    sys.exit(servers_install_docker(new_server_list))
-            
+    servers_install_docker(new_server_list)
